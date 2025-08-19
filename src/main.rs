@@ -9,8 +9,12 @@ const MAX_SIZE: u64 = 4 * 1024 * 1024 * 1024; // 4 GiB file size limit
 const CHUNK_SIZE: usize = 2 * 1024 * 1024; // 2 MiB chunk size
 const MSG_BLKS_PER_CHUNK: usize = CHUNK_SIZE >> 6;
 
+static HEX_CHARS: [char; 16] = [
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
+];
+
 // The first 32 bits of the fractional part of the cube roots of the first 64 primes 2..311
-const CONSTANTS: [u32; 64] = [
+static CONSTANTS: [u32; 64] = [
     0x428A2F98, 0x71374491, 0xB5C0FBCF, 0xE9B5DBA5, 0x3956C25B, 0x59F111F1, 0x923F82A4, 0xAB1C5ED5,
     0xD807AA98, 0x12835B01, 0x243185BE, 0x550C7DC3, 0x72BE5D74, 0x80DEB1FE, 0x9BDC06A7, 0xC19BF174,
     0xE49B69C1, 0xEFBE4786, 0x0FC19DC6, 0x240CA1CC, 0x2DE92C6F, 0x4A7484AA, 0x5CB0A9DC, 0x76F988DA,
@@ -22,7 +26,7 @@ const CONSTANTS: [u32; 64] = [
 ];
 
 fn main() -> io::Result<()> {
-    let mut msg_digest: [u32; 64] = [0; 64];
+    let mut msg_digest = Box::new([0u32; 64]);
 
     // The first 32 bits of the fractional part of the square roots of the first 8 primes 2..19
     let mut hash_vals: [u32; 8] = [
@@ -116,10 +120,12 @@ fn main() -> io::Result<()> {
         }
     }
 
-    let hex_str = hash_vals
-        .iter()
-        .map(|h| format!("{:08x}", h))
-        .collect::<String>();
+    let mut hex_str = String::with_capacity(64);
+    for &h in &hash_vals {
+        for i in (0..8).rev() {
+            hex_str.push(HEX_CHARS[((h >> (i * 4)) & 0xF) as usize]);
+        }
+    }
     println!("{hex_str}  {filename}");
 
     Ok(())
@@ -128,27 +134,22 @@ fn main() -> io::Result<()> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Internal
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[inline(always)]
 fn inner_sigma(v: u32, rotr1: u32, rotr2: u32) -> u32 {
     v.rotate_right(rotr1) ^ v.rotate_right(rotr2)
 }
 
-#[inline(always)]
 fn sigma(v: u32, rotr1: u32, rotr2: u32, shr: u32) -> u32 {
     inner_sigma(v, rotr1, rotr2) ^ (v >> shr)
 }
 
-#[inline(always)]
 fn big_sigma(v: u32, rotr1: u32, rotr2: u32, rotr3: u32) -> u32 {
     inner_sigma(v, rotr1, rotr2) ^ v.rotate_right(rotr3)
 }
 
-#[inline(always)]
 fn choose(a: u32, b: u32, c: u32) -> u32 {
     (a & b) ^ ((!a) & c)
 }
 
-#[inline(always)]
 fn majority(a: u32, b: u32, c: u32) -> u32 {
     (a & b) ^ (a & c) ^ (b & c)
 }
@@ -156,7 +157,6 @@ fn majority(a: u32, b: u32, c: u32) -> u32 {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Transfer the current message block to the first 16 words of the 64-word message digest,
 /// then populate the remaining 48 words with scrambled versions of the first 16 words
-#[inline(always)]
 fn phase_1(msg_blk: &[u8], msg_digest: &mut [u32; 64]) {
     // words 0..15
     for i in 0..16 {
@@ -176,7 +176,6 @@ fn phase_1(msg_blk: &[u8], msg_digest: &mut [u32; 64]) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Generate the hash values based on the contents of the message digest
-#[inline(always)]
 fn phase_2(msg_digest: &[u32; 64], hash_vals: &mut [u32; 8]) {
     let mut a = hash_vals[0];
     let mut b = hash_vals[1];
