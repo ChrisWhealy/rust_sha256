@@ -32,9 +32,20 @@ It is now completely dependent on WASI, so it can only ever be compiled for the 
    -rwxr-xr-x   1 chris  staff  65015 19 Aug 17:24 sha256.wasm
    ```
 
+Now compare this with the binary size from binary in the [handcrafted WebAssembly Text version](https://github.com/ChrisWhealy/wasm_sha256/tree/main/bin).
+
+```bash
+$ ll ./bin 
+total 24
+drwxr-xr-x   4 chris  staff   128 Aug 12 16:25 .
+drwxr-xr-x  20 chris  staff   640 Aug 14 12:23 ..
+-rw-r--r--@  1 chris  staff  3061 Aug 15 15:32 sha256_opt.wasm
+-rw-r--r--@  1 chris  staff  6636 Aug 15 15:32 sha256.wasm
+```
+
 As you can see, the optimized `.wasm` binary is about 55Kb compared to the 2.9Kb of the hand-crafted WAT file...
 
-However, to reduce this any further, significant effort would be needed to create a `no-std` implementation that interacts directly with WASI
+However, to reduce this any further, significant effort would be needed to create a `no-std` implementation that performs all system interaction directly through WASI.
 
 ## Running from a WebAssembly Runtime Environment
 
