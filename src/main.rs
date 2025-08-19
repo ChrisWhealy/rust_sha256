@@ -1,17 +1,20 @@
 use std::{
-    env,
+    ffi::CStr,
     fs::File,
-    io::{self, BufReader, Read},
-    process,
+    io::{self, Read, Write},
 };
+use std::io::ErrorKind;
+
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 const MAX_SIZE: u64 = 4 * 1024 * 1024 * 1024; // 4 GiB file size limit
 const CHUNK_SIZE: usize = 2 * 1024 * 1024; // 2 MiB chunk size
 const MSG_BLKS_PER_CHUNK: usize = CHUNK_SIZE >> 6;
 
-static HEX_CHARS: [char; 16] = [
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
-];
+static LINE_FEED: [u8; 1] = [0x0A];
+static SPACES: &[u8; 2] = b"  ";
+static HEX_CHARS: &[u8; 16] = b"0123456789abcdef";
 
 // The first 32 bits of the fractional part of the cube roots of the first 64 primes 2..311
 static CONSTANTS: [u32; 64] = [
@@ -34,22 +37,21 @@ fn main() -> io::Result<()> {
         0x5BE0CD19,
     ];
 
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        eprintln!("Usage: {} <filename>", args[0]);
-        process::exit(1);
+    let mut buf = [0u8; 256]; // buffer for cmd line args
+    let mut args: [&str; 4] = [""; 4]; // slices into the buffer
+    let argc = unsafe { get_wasi_args(&mut buf, &mut args).unwrap() };
+
+    if argc != 2 {
+        return Err(io::Error::new(ErrorKind::InvalidInput, "Usage: sha256 <filename>"));
     }
-    let filename = &args[1];
+
+    let filename = args[1];
 
     // Check file size first
     let metadata = std::fs::metadata(filename)?;
     let file_size = metadata.len();
     if file_size >= MAX_SIZE {
-        eprintln!(
-            "Error: file '{}' is too large ({} bytes, max allowed is < 4 GiB)",
-            filename, file_size
-        );
-        process::exit(1);
+        return Err(io::Error::new(ErrorKind::FileTooLarge, "File too large (>= 4Gb)"));
     }
 
     let file_size_bits = (file_size << 3).to_be_bytes();
@@ -59,8 +61,7 @@ fn main() -> io::Result<()> {
     empty_msg_blk[0] = 0x80;
     empty_msg_blk[56..].copy_from_slice(&file_size_bits);
 
-    let file = File::open(filename)?;
-    let mut reader = BufReader::new(file);
+    let mut file = File::open(filename)?;
 
     // Allocate buffer directly on the heap
     let mut buffer: Box<[u8]> = vec![0u8; CHUNK_SIZE].into_boxed_slice();
@@ -68,7 +69,7 @@ fn main() -> io::Result<()> {
 
     loop {
         let mut extra_blk = false;
-        let bytes_read = reader.read(&mut buffer[..])?;
+        let bytes_read = file.read(&mut buffer[..])?;
         bytes_remaining = bytes_remaining.saturating_sub(bytes_read as u64);
 
         if bytes_read == 0 {
@@ -120,19 +121,73 @@ fn main() -> io::Result<()> {
         }
     }
 
-    let mut hex_str = String::with_capacity(64);
-    for &h in &hash_vals {
-        for i in (0..8).rev() {
-            hex_str.push(HEX_CHARS[((h >> (i * 4)) & 0xF) as usize]);
+    // Convert the hex digits in the hash values to ASCII
+    let mut buf = [0u8; 64];
+
+    for (i, &val) in hash_vals.iter().enumerate() {
+        let offset = i << 3;
+        let bytes = val.to_be_bytes();
+
+        for j in 0..4 {
+            buf[offset + j * 2] = HEX_CHARS[(bytes[j] >> 4) as usize];
+            buf[offset + j * 2 + 1] = HEX_CHARS[(bytes[j] & 0x0F) as usize];
         }
     }
-    println!("{hex_str}  {filename}");
+
+    let bufs = &[
+        io::IoSlice::new(&buf),
+        io::IoSlice::new(SPACES),
+        io::IoSlice::new(filename.as_bytes()),
+        io::IoSlice::new(&LINE_FEED),
+    ];
+
+    io::stdout().write_vectored(bufs).unwrap();
 
     Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Internal
+// WASI interface
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[link(wasm_import_module = "wasi_snapshot_preview1")]
+unsafe extern "C" {
+    fn args_sizes_get(argc: *mut usize, argv_buf_size: *mut usize) -> u16;
+    fn args_get(argv: *mut *mut u8, argv_buf: *mut u8) -> u16;
+}
+
+unsafe fn get_wasi_args<'a>(
+    buf: &'a mut [u8],
+    argv: &mut [&'a str; 4], // max 4 cmd line args
+) -> Result<usize, u16> {
+    let mut argc: usize = 0;
+    let mut argv_buf_size: usize = 0;
+    let ret = unsafe { args_sizes_get(&mut argc as *mut usize, &mut argv_buf_size as *mut usize) };
+    if ret != 0 {
+        return Err(ret);
+    }
+
+    // Avoid buffer overflow
+    if argv_buf_size > buf.len() {
+        return Err(1);
+    }
+
+    let mut raw_ptrs: [*mut u8; 4] = [core::ptr::null_mut(); 4];
+
+    let ret = unsafe { args_get(raw_ptrs.as_mut_ptr(), buf.as_mut_ptr()) };
+    if ret != 0 {
+        return Err(ret);
+    }
+
+    for i in 0..argc.min(argv.len()) {
+        let arg_bytes = unsafe { CStr::from_ptr(raw_ptrs[i] as *const _).to_bytes() };
+        argv[i] = str::from_utf8(arg_bytes).unwrap_or_default();
+    }
+
+    Ok(argc)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Internal SHA256 calculation
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn inner_sigma(v: u32, rotr1: u32, rotr2: u32) -> u32 {
     v.rotate_right(rotr1) ^ v.rotate_right(rotr2)
