@@ -1,0 +1,10 @@
+[package]
+name = "sha256"
+version = "1.0.0"
+authors = ["ChrisWhealy <chris@whealy.com>"]
+description = "Calculate SHA256 Hash"
+repository = "https://github.com/ChrisWhealy/rust_sha256"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
