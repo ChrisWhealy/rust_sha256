@@ -44,6 +44,16 @@ However, this now means that the program can no longer be compiled for a default
 
 However, to reduce this any further, significant effort would be needed to create a `no-std` implementation that performs all system interaction directly through WASI.
 
+There seems to be some unavoidable Rust/WASI baggage:
+
+1. **Rust runtime and `std` baggage.**<br>
+   Even with `wee_alloc`, `panic = "abort"`, and `-Oz`, Rust still includes the WASI syscall wrappers, global allocator scaffolding, and memory initialization routines.
+
+   This will consume a few tens of KB.
+
+1. **WASM target overhead**<br>
+   `wasm32-wasip1` emits sections for things like `__data_end`, `__heap_base`, and metadata that a hand-crafted `.wat` doesn’t need at all.
+
 ## Running from a WebAssembly Runtime Environment
 
 Once you have compiled the Rust coding to the `wasip1` target, then run the generated binary through `wasm-opt`, the WebAssembly module can be run from these WebAssembly runtime environments.
