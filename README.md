@@ -10,7 +10,7 @@ To reduce this any further, the Rust code needs to abandon the use of `std` and 
 
 The first step has been taken here and the command line arguments are fetched by calling WASI's `args_sizes_get`.
 However, this now means that the program can no longer be compiled for a default target such as `x86_64-apple-darwin`.
-Now, it can only ever be compiled for the `wasip1` target.  
+It is now completely dependent on WASI, so it can only ever be compiled for the `wasm32-wasip1` target.  
 
 ## Build
 
