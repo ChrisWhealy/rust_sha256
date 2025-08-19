@@ -4,14 +4,6 @@ Having developed an implementation of the [SHA256 algorithm directly in WebAssem
 
 Therefore, I decided to implement the equivalent functionality in Rust, compile it to WebAssembly and see what the size difference is of the two binaries.
 
-Both `.wasm` binaries have been run through `wasm-opt` using the same options, but even with some (not all, admittedly) optimisations, the `.wasm` file coming from Rust was still just over 18 times larger.
-
-To reduce this any further, the Rust code needs to abandon the use of `std` and interact directly with the `WASI` library.
-
-The first step has been taken here and the command line arguments are fetched by calling WASI's `args_sizes_get`.
-However, this now means that the program can no longer be compiled for a default target such as `x86_64-apple-darwin`.
-It is now completely dependent on WASI, so it can only ever be compiled for the `wasm32-wasip1` target.  
-
 ## Build
 
 1. `rustup add target wasip1`
@@ -43,7 +35,12 @@ drwxr-xr-x  20 chris  staff   640 Aug 14 12:23 ..
 -rw-r--r--@  1 chris  staff  6636 Aug 15 15:32 sha256.wasm
 ```
 
-As you can see, the optimized `.wasm` binary is about 55Kb compared to the 2.9Kb of the hand-crafted WAT file...
+Both `.wasm` binaries have been run through `wasm-opt` using the same options, but even with some (not all, admittedly) optimisations, the `.wasm` file coming from Rust was still just over 18 times larger.
+
+To reduce this any further, the Rust code needs to abandon the use of `std` and interact entirely with the `WASI` library.
+
+The first step has been taken here and the command line arguments are fetched by calling WASI's `args_sizes_get`.
+However, this now means that the program can no longer be compiled for a default target such as `x86_64-apple-darwin`: it can only ever be compiled for the `wasm32-wasip1` target.
 
 However, to reduce this any further, significant effort would be needed to create a `no-std` implementation that performs all system interaction directly through WASI.
 
