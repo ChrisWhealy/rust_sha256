@@ -32,7 +32,7 @@ It is now completely dependent on WASI, so it can only ever be compiled for the 
    -rwxr-xr-x   1 chris  staff  65015 19 Aug 17:24 sha256.wasm
    ```
 
-Now compare this with the binary size from binary in the [handcrafted WebAssembly Text version](https://github.com/ChrisWhealy/wasm_sha256/tree/main/bin).
+Now compare this with the binary size from the [handcrafted WebAssembly Text version](https://github.com/ChrisWhealy/wasm_sha256/tree/main/bin).
 
 ```bash
 $ ll ./bin 
