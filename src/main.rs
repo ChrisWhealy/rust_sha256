@@ -105,8 +105,7 @@ fn main() -> io::Result<()> {
         // Process available message blocks
         for blk in 0..msg_blk_count {
             let blk_idx = blk << 6;
-            let msg_blk = &buffer[blk_idx..blk_idx + 64];
-            phase_1(msg_blk, &mut msg_digest);
+            phase_1(&buffer[blk_idx..blk_idx + 64], &mut msg_digest);
             phase_2(&msg_digest, &mut hash_vals);
         }
 
@@ -154,6 +153,9 @@ fn majority(a: u32, b: u32, c: u32) -> u32 {
     (a & b) ^ (a & c) ^ (b & c)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Transfer the current message block to the first 16 words of the 64-word message digest,
+/// then populate the remaining 48 words with scrambled versions of the first 16 words
 #[inline(always)]
 fn phase_1(msg_blk: &[u8], msg_digest: &mut [u32; 64]) {
     // words 0..15
@@ -172,6 +174,8 @@ fn phase_1(msg_blk: &[u8], msg_digest: &mut [u32; 64]) {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Generate the hash values based on the contents of the message digest
 #[inline(always)]
 fn phase_2(msg_digest: &[u32; 64], hash_vals: &mut [u32; 8]) {
     let mut a = hash_vals[0];
@@ -191,6 +195,7 @@ fn phase_2(msg_digest: &[u32; 64], hash_vals: &mut [u32; 8]) {
             .wrapping_add(choose(e, f, g));
         let t2 = big_sigma(a, 2, 13, 22).wrapping_add(majority(a, b, c));
 
+        // Shunt working copies of the hash values
         h = g;
         g = f;
         f = e;
