@@ -9,40 +9,42 @@ Therefore, I decided to implement the equivalent functionality in Rust, compile 
 1. `rustup add target wasip1`
 2. `./build-opt.sh`
 4. ```bash
-   ll ./target/wasm32-wasip1/release                                                  
-   total 248
-   drwxr-xr-x  11 chris  staff    352 19 Aug 17:24 .
-   drwxr-xr-x@  5 chris  staff    160 19 Aug 12:03 ..
-   -rw-r--r--   1 chris  staff      0 19 Aug 12:03 .cargo-lock
-   drwxr-xr-x  27 chris  staff    864 19 Aug 17:24 .fingerprint
-   drwxr-xr-x   6 chris  staff    192 19 Aug 17:24 build
-   drwxr-xr-x  59 chris  staff   1888 19 Aug 17:24 deps
-   drwxr-xr-x   2 chris  staff     64 19 Aug 12:03 examples
-   drwxr-xr-x   2 chris  staff     64 19 Aug 12:03 incremental
-   -rw-r--r--   1 chris  staff  57118 19 Aug 17:24 sha256_opt.wasm
-   -rw-r--r--   1 chris  staff    124 19 Aug 12:03 sha256.d
-   -rwxr-xr-x   1 chris  staff  65015 19 Aug 17:24 sha256.wasm
+   ll target/wasm32-wasip1/release/               
+   total 256
+   drwxr-xr-x  11 chris  staff    352 20 Aug 16:33 .
+   drwxr-xr-x@  4 chris  staff    128 20 Aug 16:32 ..
+   -rw-r--r--   1 chris  staff      0 20 Aug 16:32 .cargo-lock
+   drwxr-xr-x  11 chris  staff    352 20 Aug 16:32 .fingerprint
+   drwxr-xr-x   4 chris  staff    128 20 Aug 16:32 build
+   drwxr-xr-x  22 chris  staff    704 20 Aug 16:32 deps
+   drwxr-xr-x   2 chris  staff     64 20 Aug 16:32 examples
+   drwxr-xr-x   2 chris  staff     64 20 Aug 16:32 incremental
+   -rw-r--r--   1 chris  staff    124 20 Aug 16:32 sha256.d
+   -rw-r--r--   1 chris  staff  57542 20 Aug 16:33 sha256.opt.wasm
+   -rwxr-xr-x   1 chris  staff  65015 20 Aug 16:32 sha256.wasm
    ```
 
 Now compare this with the binary size from the [handcrafted WebAssembly Text version](https://github.com/ChrisWhealy/wasm_sha256/tree/main/bin).
 
 ```bash
 $ ll ./bin 
-total 24
-drwxr-xr-x   4 chris  staff   128 Aug 12 16:25 .
-drwxr-xr-x  20 chris  staff   640 Aug 14 12:23 ..
--rw-r--r--@  1 chris  staff  3061 Aug 15 15:32 sha256_opt.wasm
--rw-r--r--@  1 chris  staff  6636 Aug 15 15:32 sha256.wasm
+total 40
+drwxr-xr-x   6 chris  staff   192 20 Aug 14:09 .
+drwxr-xr-x  20 chris  staff   640 20 Aug 15:16 ..
+-rw-r--r--   1 chris  staff  3058 20 Aug 14:09 sha256.debug.opt.wasm
+-rw-r--r--   1 chris  staff  6633 20 Aug 14:09 sha256.debug.wasm
+-rw-r--r--   1 chris  staff  2535 20 Aug 14:09 sha256.opt.wasm
+-rw-r--r--   1 chris  staff  2817 20 Aug 14:09 sha256.wasm
 ```
 
-Both `.wasm` binaries have been run through `wasm-opt` using the same options, but even with some (not all, admittedly) optimisations, the `.wasm` file coming from Rust was still just over 18 times larger.
+Both `.wasm` binaries have been run through `wasm-opt` using the same options (`sha256.opt.wasm`), but even after applying some (not all, admittedly) optimisations, the `.wasm` file generated from Rust was still about 20 times larger.
 
-To reduce this any further, the Rust code needs to abandon the use of `std` and interact entirely with the `WASI` library.
+To reduce this any further, the Rust code needs to abandon the use of `std` and interact only with the `WASI` library.
 
 The first step has been taken here and the command line arguments are fetched by calling WASI's `args_sizes_get`.
 However, this now means that the program can no longer be compiled for a default target such as `x86_64-apple-darwin`: it can only ever be compiled for the `wasm32-wasip1` target.
 
-However, to reduce this any further, significant effort would be needed to create a `no-std` implementation that performs all system interaction directly through WASI.
+However, to reduce this any further, significant effort would be needed to create a `no-std` implementation that performs all system interaction directly through `WASI`.
 
 There seems to be some unavoidable Rust/WASI baggage:
 
