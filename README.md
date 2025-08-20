@@ -37,7 +37,8 @@ drwxr-xr-x  20 chris  staff   640 20 Aug 15:16 ..
 -rw-r--r--   1 chris  staff  2817 20 Aug 14:09 sha256.wasm
 ```
 
-Both `.wasm` binaries have been run through `wasm-opt` using the same options (`sha256.opt.wasm`), but even after applying some (not all, admittedly) optimisations, the `.wasm` file generated from Rust was still about 20 times larger.
+In both cases, `sha256.opt.wasm` has been created by running `sha256.wasm` through `wasm-opt`.
+But even after applying some (not all, admittedly) optimisations, the `.wasm` file generated from Rust is still about 20 times larger.
 
 To reduce this any further, the Rust code needs to abandon the use of `std` and interact only with the `WASI` library.
 
