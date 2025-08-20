@@ -63,20 +63,20 @@ Once you have compiled the Rust coding to the `wasip1` target, then run the gene
 ### Wasmer
 
 ```bash
-$ wasmer run ./target/wasm32-wasip1/release/sha256_opt.wasm --mapdir /::./src main.rs   
-8a8b9880912758007361707123da3cd0be40bf4bbd04c546a55fce0a6e1a405e  main.rs
+$ wasmer run ./target/wasm32-wasip1/release/sha256.opt.wasm --mapdir /::./src main.rs   
+5e31f29a050fd34f09081bca07edad2b0a4936a2b3bee0b769a430fcd507322b  main.rs
 ```
 
 ### Wasmtime
 
 ```bash
-$ wasmtime --dir ./src ./target/wasm32-wasip1/release/sha256_opt.wasm ./src/main.rs
-8a8b9880912758007361707123da3cd0be40bf4bbd04c546a55fce0a6e1a405e  ./src/main.rs
+$ wasmtime --dir ./src ./target/wasm32-wasip1/release/sha256.opt.wasm ./src/main.rs
+5e31f29a050fd34f09081bca07edad2b0a4936a2b3bee0b769a430fcd507322b  ./src/main.rs
 ```
 
 ### Wazero
 
 ```bash
-$ wazero run -mount=.:. ./target/wasm32-wasip1/release/sha256_opt.wasm ./src/main.rs 
-8a8b9880912758007361707123da3cd0be40bf4bbd04c546a55fce0a6e1a405e  ./src/main.rs
+$ wazero run -mount=.:. ./target/wasm32-wasip1/release/sha256.opt.wasm ./src/main.rs 
+5e31f29a050fd34f09081bca07edad2b0a4936a2b3bee0b769a430fcd507322b  ./src/main.rs
 ```
