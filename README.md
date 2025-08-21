@@ -1,4 +1,4 @@
-# Rust Implementation of the SHA256 Algorithm
+# Rust+WASI Implementation of the SHA256 Algorithm
 
 Having developed an implementation of the [SHA256 algorithm directly in WebAssembly Text](https://github.com/ChrisWhealy/wasm_sha256), I was pleased to get the compiled binary down to about 2.5Kb.
 
