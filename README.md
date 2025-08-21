@@ -43,7 +43,7 @@ But even after replacing all usages `std::io::{READ, Write} ` with the correspon
 To reduce this any further, the Rust code needs to switch to `no-std`.
 
 That said, there still seems to be some unavoidable Rust/WASI baggage.
-For instance, having `wasm32-wasip` as the compilation target means that sections are generated in the `.wasm` module for things like `__data_end`, `__heap_base`, and metadata that are not needed in the hand-crafted `.wat` implementation.
+For instance, having `wasm32-wasip1` as the compilation target means that sections are generated in the `.wasm` module for things like `__data_end`, `__heap_base`, and metadata that are not needed in the hand-crafted `.wat` implementation.
 
 ## Running from a WebAssembly Runtime Environment
 
