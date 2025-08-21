@@ -41,9 +41,9 @@ In both cases, `sha256.opt.wasm` has been created by running `sha256.wasm` throu
 But even after replacing all usages `std::io::{READ, Write} ` with the corresponding WASI calls (`path_open`, `fd_read` etc), the `.wasm` file generated from Rust is still about 25 times larger.
 
 To reduce this any further, the Rust code needs to switch to `no-std`.
-That said, there still seems to be some unavoidable Rust/WASI baggage:
 
-Having `wasm32-wasip` as the compilation target means WASM section are generated for things like `__data_end`, `__heap_base`, and metadata that are unneeded in a hand-crafted `.wat` implementation.
+That said, there still seems to be some unavoidable Rust/WASI baggage.
+For instance, having `wasm32-wasip` as the compilation target means that sections are generated in the `.wasm` module for things like `__data_end`, `__heap_base`, and metadata that are not needed in the hand-crafted `.wat` implementation.
 
 ## Running from a WebAssembly Runtime Environment
 
