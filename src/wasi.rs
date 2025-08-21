@@ -29,6 +29,7 @@ pub struct Ciovec {
     buf_len: usize,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[link(wasm_import_module = "wasi_snapshot_preview1")]
 unsafe extern "C" {
     fn args_sizes_get(argc: *mut usize, argv_buf_size: *mut usize) -> u16;
@@ -90,6 +91,7 @@ pub unsafe fn wasi_args_get<'a>(
     Ok(argc)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub unsafe fn fetch_file_size(fd: u32) -> Result<u64, u16> {
     let mut new_offset: u64 = 0;
 
@@ -112,6 +114,7 @@ pub unsafe fn fetch_file_size(fd: u32) -> Result<u64, u16> {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub unsafe fn wasi_path_open(dir_fd: u32, path: &str) -> Result<u32, u16> {
     let mut new_fd: u32 = 0;
 
@@ -142,6 +145,7 @@ pub unsafe fn wasi_path_open(dir_fd: u32, path: &str) -> Result<u32, u16> {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub unsafe fn wasi_fd_read(fd: u32, buf: &mut [u8]) -> Result<usize, u16> {
     let iov = Iovec {
         buf: buf.as_mut_ptr(),
@@ -159,6 +163,7 @@ pub unsafe fn wasi_fd_read(fd: u32, buf: &mut [u8]) -> Result<usize, u16> {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub unsafe fn wasi_fd_write(fd: u32, bufs: &[&[u8]]) -> Result<usize, u16> {
     let iovs: Vec<Ciovec> = bufs
         .iter()

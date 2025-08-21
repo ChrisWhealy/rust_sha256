@@ -7,8 +7,8 @@ use wasi::*;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-const MAX_SIZE: u64 = 4 * 1024 * 1024 * 1024; // 4 GiB file size limit
-const CHUNK_SIZE: usize = 2 * 1024 * 1024; // 2 MiB chunk size
+const MAX_SIZE: u64 = 4 * 1024 * 1024 * 1024; // 4 Gb file size limit
+const CHUNK_SIZE: usize = 2 * 1024 * 1024; // 2 Mb chunk size
 const MSG_BLKS_PER_CHUNK: usize = CHUNK_SIZE >> 6;
 
 static LINE_FEED: [u8; 1] = [0x0A];
@@ -68,6 +68,7 @@ fn main() -> Result<(), u16> {
         return Err(1);
     }
 
+    let mut bytes_remaining = file_size;
     let file_size_bits = (file_size << 3).to_be_bytes();
 
     // Prepare empty msg block for edge case where file size is an exact integer-multiple of the buffer size
@@ -84,8 +85,9 @@ fn main() -> Result<(), u16> {
 
     // Allocate buffer directly on the heap
     let mut buffer: Box<[u8]> = vec![0u8; CHUNK_SIZE].into_boxed_slice();
-    let mut bytes_remaining = file_size;
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Read file in 2Mb chunks
     loop {
         let mut extra_blk = false;
         let bytes_read = match unsafe { wasi_fd_read(file_fd, &mut buffer) } {
@@ -99,7 +101,7 @@ fn main() -> Result<(), u16> {
 
         bytes_remaining = bytes_remaining.saturating_sub(bytes_read as u64);
 
-        // Assume the chunk is full
+        // Assume we've just read a full chunk
         let mut msg_blk_count = MSG_BLKS_PER_CHUNK;
 
         if bytes_read == CHUNK_SIZE {
@@ -108,12 +110,13 @@ fn main() -> Result<(), u16> {
                 extra_blk = true; // file size is exact an integer-multiple of the chunk size
             }
         } else {
-            // Final partial chunk - which will always contain at least one empty byte for the EOD marker
+            // Final partial chunk.
+            // This will always contain at least one empty byte for the EOD marker
             let eod = bytes_read;
             buffer[eod] = 0x80;
             let used = eod + 1;
 
-            // Avoid buffer overflow
+            // Check that writing the 8-byte file length will not cause buffer overflow
             if CHUNK_SIZE - used < 8 {
                 extra_blk = true;
                 empty_msg_blk[0] = 0x00; // EOD marker already exists at the end of the previous block
@@ -159,7 +162,6 @@ fn main() -> Result<(), u16> {
 
     let write_buf: [&[u8]; 4] = [&hash_buf, SPACES, filename.as_bytes(), &LINE_FEED];
 
-    // io::stdout().write_vectored(bufs).unwrap();
     let _ = unsafe { wasi_fd_write(1, &write_buf).unwrap() };
 
     Ok(())
