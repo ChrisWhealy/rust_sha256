@@ -92,7 +92,6 @@ $ wasmer run ./target/wasm32-wasip1/release/std.opt.wasm --mapdir /::./src/bin -
 008d580e17bb8da5bf3458037ab9e39b2a48ee2688bf004abf4529bf1c35ea1c  std.rs
 ```
 
-In spite of the fact that this binary is 1/3 smaller than the `std` version, there is still some unavoidable Rust/WASI baggage.
+In spite of the fact that this binary is about 1/3 smaller than the `std` version, there is still some unavoidable Rust/WASI baggage.
 
-* The use of standard Rust functionality is convenient, but the cost of such convenience is the fact that every time you do "normal" things like allocate a `String` or use the `format!` macro, you implicitly bring into scope a large amount of extra coding that could (with some effort) be removed. 
-* The `wasm32-wasip1` compilation target adds sections to the `.wasm` module for things like `__data_end`, `__heap_base`, and metadata that are not needed in the hand-crafted `.wat` implementation.
+The use of standard Rust functionality is convenient, but the cost of such convenience is the fact that every time you do "normal" things like allocate a `String` or use the `format!` macro, you implicitly bring into scope a large amount of extra coding that can (with some effort) be removed. 
