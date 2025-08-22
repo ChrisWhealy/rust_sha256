@@ -22,7 +22,7 @@ The optimized WebAssembly binary is about 72Kb.
 Using the WASI library instead to perform all the file I/O requires that you write a specific Rust wrapper function for each WASI function you wish to call.
 This requires much more effort, but the optimized WebAssembly binary is 42Kb.  
 
-## Using Handcrafted WebAssembly That interacts Directly with WASI
+## Using WASI Directly from Handcrafted WebAssembly
 
 Look at the coding in this repo <https://github.com/ChrisWhealy/wasm_sha256>
 
