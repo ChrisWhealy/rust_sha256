@@ -1,3 +1,6 @@
+mod interface;
+
+use interface::*;
 use std::ffi::CStr;
 
 static ERR_MSG_CMD_ARGS: &[u8] = "Unable to fetch command line arguments: 0x".as_bytes();
@@ -10,48 +13,6 @@ static ERR_MSG_NOT_DIR_SYMLINK: &[u8] =
     "Neither a directory nor a symlink to a directory".as_bytes();
 static ERR_MSG_NOT_PERMITTED: &[u8] = "Operation not permitted".as_bytes();
 static ERR_MSG_FD_READ: &[u8] = "Error reading file: 0x".as_bytes();
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// WASI interface definition
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-/// Matches WASI's __wasi_iovec_t
-#[repr(C)]
-pub struct Iovec {
-    buf: *mut u8,
-    buf_len: usize,
-}
-
-/// Matches WASI's __wasi_ciovec_t
-#[repr(C)]
-pub struct Ciovec {
-    buf: *const u8,
-    buf_len: usize,
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[link(wasm_import_module = "wasi_snapshot_preview1")]
-unsafe extern "C" {
-    fn args_sizes_get(argc: *mut usize, argv_buf_size: *mut usize) -> u16;
-    fn args_get(argv: *mut *mut u8, argv_buf: *mut u8) -> u16;
-
-    fn fd_seek(fd: u32, offset: i64, whence: u8, newoffset: *mut u64) -> u16;
-
-    fn path_open(
-        dir_fd: u32,
-        dirflags: u32,
-        path: *const u8,
-        path_len: usize,
-        oflags: u32,
-        fs_rights_base: u64,
-        fs_rights_inheriting: u64,
-        fdflags: u32,
-        fd_out: *mut u32,
-    ) -> u16;
-
-    fn fd_read(fd: u32, iovs: *const Iovec, iovs_len: usize, nread: *mut usize) -> u16;
-    fn fd_write(fd: u32, iovs: *const Ciovec, iovs_len: usize, nwritten: *mut usize) -> u16;
-}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Rust <--> WASI interface

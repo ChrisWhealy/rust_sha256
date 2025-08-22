@@ -2,18 +2,20 @@
 name = "sha256"
 version = "1.0.0"
 authors = ["ChrisWhealy <chris@whealy.com>"]
-description = "Calculate SHA256 Hash"
+description = "Calculate the SHA256 Hash"
 repository = "https://github.com/ChrisWhealy/rust_sha256"
 edition = "2024"
 license = "MIT"
 
 [dependencies]
-wasi = "0.14.2+wasi-0.2.4"
+# metadata wasi-0.2.4
+wasi = "0.14.2"
 wee_alloc = "0.4"
 
-[profile.release]
-lto = true
-codegen-units = 1
-opt-level = "z"
-panic = "abort"
-strip = "debuginfo"
+[[bin]]
+name = "std"
+path = "src/bin/std.rs"
+
+[[bin]]
+name = "wasi"
+path = "src/bin/wasi.rs"
